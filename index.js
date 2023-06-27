@@ -77,6 +77,9 @@ let products = [
 
 const productsEl = document.getElementById('productItems');
 const cartItemsEl = document.getElementById('cartItems');
+const subtotalEl = document.getElementById('subtotal');
+const totalItemsInCartEl = document.getElementById('total_items_in_cart');
+const removeAllItemsEl = document.getElementById('removeAllItems');
 
 // render products
 function renderProducts(){
@@ -99,7 +102,7 @@ function renderProducts(){
 }
 renderProducts()
 
-let cart = [];
+let cart = JSON.parse(localStorage.getItem('CART')) || [];
 updateCart()
 //  add cart to cart
 function addToCart(id){
@@ -116,40 +119,86 @@ function addToCart(id){
 }
 
 
-// update cart
-function updateCart(){
-    renderCartItems()
-}
-
 // render cart items
 function renderCartItems(){
-    cartItemsEl.innerHTML ='';
-    cart.map((cartItem)=>{
-        cartItemsEl.innerHTML +=`
-        <div class="justify-between mb-6 rounded-lg bg-white p-6 shadow-md sm:flex sm:justify-start">
-        <img src=${cartItem.image} alt="product-image" class="w-full rounded-lg sm:w-40" />
-        <div class="sm:ml-4 sm:flex sm:w-full sm:justify-between">
-          <div class="mt-5 sm:mt-0">
-            <h2 class="text-lg font-bold text-gray-900">${cartItem.name}</h2>
-            <p class="mt-1 text-xs text-gray-700">${cartItem.price}</p>
+  cartItemsEl.innerHTML ='';
+  cart.map((cartItem)=>{
+      cartItemsEl.innerHTML +=`
+      <div class="justify-between mb-6 rounded-lg bg-white p-6 shadow-md sm:flex sm:justify-start">
+      <img src=${cartItem.image} alt="product-image" class="w-full rounded-lg sm:w-40" />
+      <div class="sm:ml-4 sm:flex sm:w-full sm:justify-between">
+        <div class="mt-5 sm:mt-0">
+          <h2 class="text-lg font-bold text-gray-900">${cartItem.name}</h2>
+          <p class="mt-1 text-xs text-gray-700">${cartItem.price}</p>
+        </div>
+        <div class="mt-4 flex justify-between sm:space-y-6 sm:mt-0 sm:block sm:space-x-6">
+          <div class="flex items-center border-gray-100">
+            <span class="cursor-pointer rounded-l bg-gray-100 py-1 px-3.5 duration-100 hover:bg-blue-500 hover:text-blue-50" onclick="changeNumberOfUnits('minus', ${cartItem.id})"> - </span>
+            <div class="h-8 w-8 border bg-white text-center text-xs outline-none">${cartItem.numberOfUnits}</div>
+            <span class="cursor-pointer rounded-r bg-gray-100 py-1 px-3 duration-100 hover:bg-blue-500 hover:text-blue-50" onclick="changeNumberOfUnits('plus', ${cartItem.id})"> + </span>
           </div>
-          <div class="mt-4 flex justify-between sm:space-y-6 sm:mt-0 sm:block sm:space-x-6">
-            <div class="flex items-center border-gray-100">
-              <span class="cursor-pointer rounded-l bg-gray-100 py-1 px-3.5 duration-100 hover:bg-blue-500 hover:text-blue-50" onclick="changeNumberOfUnits('minus', ${cartItem.id})"> - </span>
-              <div class="h-8 w-8 border bg-white text-center text-xs outline-none">${cartItem.numberOfUnits}</div>
-              <span class="cursor-pointer rounded-r bg-gray-100 py-1 px-3 duration-100 hover:bg-blue-500 hover:text-blue-50" onclick="changeNumberOfUnits('plus', ${cartItem.id})"> + </span>
-            </div>
-            <div class="flex items-center space-x-4">
-              <p class="text-sm">259.000 ₭</p>
-              <span'>
-                  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="h-5 w-5 cursor-pointer duration-150 hover:text-red-500">
-                    <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
-                  </svg>
-              </span>
-            </div>
+          <div class="flex items-center space-x-4">
+            <span'>
+                <svg onclick='removeItem(${cartItem.id})' xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="h-5 w-5 cursor-pointer duration-150 hover:text-red-500">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+            </span>
           </div>
         </div>
       </div>
-        `
-    })
+    </div>
+      `
+  })
 }
+
+function changeNumberOfUnits(action,id){
+  cart = cart.map((item)=>{
+    let numberOfUnits = item.numberOfUnits
+    if(item.id === id){
+      if(action === 'plus' && numberOfUnits < item.instock){
+        numberOfUnits ++;
+      }else if(action === 'minus' && numberOfUnits > 1){
+        numberOfUnits --;
+      }
+    }
+    return {
+      ...item,
+      numberOfUnits
+    }
+  })
+  updateCart()
+}
+
+// update cart
+function updateCart(){
+    renderCartItems()
+    renderSubtotal()
+
+    localStorage.setItem('CART', JSON.stringify(cart));
+}
+
+function renderSubtotal(){
+  let totalPrice = 0, totalQuantity = 0;
+
+  cart.map((item)=>{
+    totalPrice += item.price * item.numberOfUnits;
+    totalQuantity += item.numberOfUnits
+  })
+  subtotalEl.innerHTML = `subtotal (${totalQuantity} items) : ${totalPrice.toFixed(2)}`
+  totalItemsInCartEl.innerHTML = totalQuantity
+}
+
+// remove items from cart
+function removeItem(id){
+  cart = cart.filter((item)=> item.id !== id)
+
+  updateCart()
+}
+removeAllItemsEl.innerHTML =`
+<button onclick='clearCart()' class="my-8 bg-yellow-500 ml-20 py-2 px-6 text-white font-semibold rounded-md text-lg">Cleare All</button>
+`
+const clearCart = () =>{
+  cart = []
+}
+
+clearCart()
